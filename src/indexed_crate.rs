@@ -1,10 +1,11 @@
-use std::{
-    borrow::Borrow,
-    collections::{hash_map::Entry, HashMap, HashSet},
-};
+#[cfg(not(feature = "rustc-hash"))]
+use std::collections::{HashMap, HashSet};
+use std::{borrow::Borrow, collections::hash_map::Entry};
 
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
+#[cfg(feature = "rustc-hash")]
+use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
 use rustdoc_types::{Crate, Id, Item};
 
 use crate::{adapter::supported_item_kind, sealed_trait, visibility_tracker::VisibilityTracker};
@@ -99,7 +100,7 @@ impl<K: std::cmp::Eq + std::hash::Hash, V> Extend<(K, V)> for MapList<K, V> {
 impl<K: std::cmp::Eq + std::hash::Hash, V> MapList<K, V> {
     #[inline]
     pub fn new() -> Self {
-        Self(HashMap::new())
+        Self(HashMap::default())
     }
 
     #[inline]
@@ -142,7 +143,9 @@ impl<K: std::cmp::Eq + std::hash::Hash, V> MapList<K, V> {
 ///
 /// When compiled using the `rayon` feature, build it in parallel. Specifically, this paralelizes
 /// the work of gathering all of the impls for the items in the index.
-fn build_impl_index(index: &HashMap<Id, Item>) -> MapList<ImplEntry<'_>, (&Item, &Item)> {
+fn build_impl_index(
+    index: &std::collections::HashMap<Id, Item>,
+) -> MapList<ImplEntry<'_>, (&Item, &Item)> {
     #[cfg(feature = "rayon")]
     let iter = index.par_iter();
     #[cfg(not(feature = "rayon"))]
@@ -521,7 +524,7 @@ fn new_trait(manual_trait_item: &ManualTraitItem, id: Id, crate_id: u32) -> Item
         span: None,
         visibility: rustdoc_types::Visibility::Public,
         docs: None,
-        links: HashMap::new(),
+        links: std::collections::HashMap::new(),
         attrs: Vec::new(),
         deprecation: None,
         inner: rustdoc_types::ItemEnum::Trait(rustdoc_types::Trait {

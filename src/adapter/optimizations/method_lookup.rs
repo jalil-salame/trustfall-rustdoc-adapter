@@ -1,5 +1,9 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
+#[cfg(not(feature = "rustc-hash"))]
+use std::collections::HashMap;
 
+#[cfg(feature = "rustc-hash")]
+use rustc_hash::FxHashMap as HashMap;
 use rustdoc_types::{Id, Impl, Item, ItemEnum, Type};
 use trustfall::{
     provider::{
@@ -163,7 +167,7 @@ fn resolve_impl_method_by_name<'a>(
 fn resolve_methods_slow_path<'a>(
     impl_vertex: &'a Impl,
     origin: Origin,
-    item_index: &'a HashMap<Id, Item>,
+    item_index: &'a std::collections::HashMap<Id, Item>,
 ) -> VertexIterator<'a, Vertex<'a>> {
     let provided_methods: Box<dyn Iterator<Item = &Id>> =
         if impl_vertex.provided_trait_methods.is_empty() {
